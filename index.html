@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <script src="./socket.io.js"></script>
+    <script>
+        const socket = io();
+        window.onload = function () {
+            const streamImage = document.getElementById('stream')
+            const canvas = document.createElement('canvas');            
+            canvas.width = 640;
+            canvas.height = 360;
+            document.body.appendChild(canvas);            
+            const context = canvas.getContext('2d');
+            //context.fillRect(10, 10, 50, 50);
+            const previous_frame = [];
+            // choose a brightness threshold, if the old pixel values differs enough then we know there's movement
+            const threshold = 20;
+            // sample the colour every 50 pixels
+            const sample_size = 20;
+            const w = 640;
+            const h = 360;
+
+            function draw() {
+                    context.drawImage(streamImage, 0, 0, w, h);
+                    const data = context.getImageData(0, 0, w, h).data;                                      
+
+                    for (let y = 0; y < h; y += sample_size) {
+
+                        for (let x = 0; x < w; x += sample_size) {
+                            let pos = (x + y * w) * 4;
+                            let r = data[pos];
+                            let g = data[pos + 1];
+                            let b = data[pos + 2];
+                            
+                            if (previous_frame[pos] && Math.abs(previous_frame[pos] - r) > threshold) {
+                                context.fillStyle = rgb(r, g, b);
+                                context.fillRect(x, y, sample_size, sample_size);
+                            }
+                            // store these colour values to compare to the next frame
+                            previous_frame[pos] = r;
+                        }
+
+                    } 
+                }
+            
+
+            socket.on('image', function (data) {                
+                streamImage.src = data;         
+                setTimeout(draw, 20);       
+                // make an array to hold our old pixel values
+                
+                
+            });
+        }
+    </script>
+    <title>Document</title>
+</head>
+
+<body>
+    <img src="" alt="" id="stream">    
+</body>
+
+</html>
